@@ -58,6 +58,7 @@ int fs_mount(const char *diskname)
 int fs_umount(void)
 {
 	/* TODO: Phase 1 */
+  block_disk_close();
 }
 
 int fs_info(void)
@@ -115,4 +116,3 @@ int fs_read(int fd, void *buf, size_t count)
 {
 	/* TODO: Phase 4 */
 }
-
