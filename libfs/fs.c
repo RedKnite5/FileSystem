@@ -10,7 +10,8 @@
 /* TODO: Phase 1 */
 typedef struct superBlock((__packed__)) 
 {
-  uint64_t signature;
+  //pointers
+  string signature;
   uint16_t blockCount;
   uint16_t rootDirIndex;
   uint16_t dataBlockCount;
@@ -24,16 +25,30 @@ typedef struct fat((__packed__))
   uint16_t* fat = malloc(sizeof(*fat) * N);
 }
 
-typedef struct Root directory((__packed__)) 
+typedef struct rootDir((__packed__)) 
 {
   //The root directory is an array of 128 entries
   uint32_t fat[FS_FILE_MAX_COUNT];
   //Formatting of entries designated for functions
 }
 
+//Global Variables
+static struct superBlock superBlock;
+
 int fs_mount(const char *diskname)
 {
 	/* TODO: Phase 1 */
+  //Open disk, store info in data structures?
+  if(!block_disk_open(*diskname);) {
+    return -1;
+  }
+  superBlock.dataBlockCount = block_disk_count();
+  superBlock.signature = "ECS150FS";
+  superBlock.fatBlockCount = superBlock.dataBlockCount *   2)/BLOCK_SIZE;
+  superblock.rootDirIndex = superBlock.fatBlockCount + 1;
+  superBlock.blockCount = superBlock.dataBlockCount +   
+superBlock.rootDirIndex;
+  
 }
 
 int fs_umount(void)
