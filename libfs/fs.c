@@ -11,7 +11,7 @@
 #define FAT_PADDING 10
 
 /* TODO: Phase 1 */
-typedef struct __attribute__ (__packed__) superBlock
+struct __attribute__ ((__packed__)) superBlock
 {
   uint64_t signature;
   uint16_t blockCount;
@@ -19,16 +19,10 @@ typedef struct __attribute__ (__packed__) superBlock
   uint16_t dataBlockStartIndex;
   uint16_t dataBlockCount;
   uint8_t  fatBlockCount;
-  uint8_t  padding[SUPER_PADDING]
-}
+  uint8_t  padding[SUPER_PADDING];
+};
 
-typedef struct __attribute__ (__packed__) fat
-{
-  //N = Number of data blocks
-  uint16_t* fat[]= malloc(sizeof(*fat) * N);
-}
-
-typedef struct __attribute__ (__packed__) rootDirEntry 
+struct __attribute__ ((__packed__)) rootDirEntry 
 {
   //The root directory is an array of 128 entries
   char filename[16];
@@ -36,48 +30,57 @@ typedef struct __attribute__ (__packed__) rootDirEntry
   uint32_t start_index;
   uint8_t padding[FAT_PADDING];
   //Formatting of entries designated for functions
-}
+};
+uint16_t *fat;
 
-rootDirEntry rootDir[FS_FILE_MAX_COUNT];
 
 //Global Variables
 static struct superBlock superBlock;
+static struct rootDirEntry rootDir[FS_FILE_MAX_COUNT];
 
 int fs_mount(const char *diskname)
 {
+  int rootIndex;
 	/* TODO: Phase 1 */
   //Open disk, store info in data structures?
-  if(!block_disk_open(*diskname);) {
+  if(!block_disk_open(diskname)) {
     return -1;
   }
   //superBlock
   block_read(0, &superBlock);
-
+  int N = superBlock.fatBlockCount;
+  fat = malloc(sizeof(uint16_t) * N);
+  
   //FAT
-  for (int i = 1; i < (block_disk_count() * 2)/BLOCK_SIZE; i++) {
-    block_read(i, fat[i * BLOCK_SIZE]);
+  for (int i = 1; i < N; i++) {
+    block_read(i, &fat[i * BLOCK_SIZE]);
+    rootIndex = i;
   }
-
+  
   //RootDirectory
-  block_read((i+1) * BLOCK_SIZE, &rootDir);
+  block_read((rootIndex+1) * BLOCK_SIZE, &rootDir);
   
 }
 
 int fs_umount(void)
 {
+  //TODO: Check for current open file descriptors
 	/* TODO: Phase 1 */
-  block_disk_close();
+  if (block_disk_close() == -1) {
+    return -1;
+  }
+  return 0;
 }
 
 int fs_info(void)
 {
 	/* TODO: Phase 1 */
-  printf("Signature is: %d\n", '0' + signature);
-  printf("blockCount is: %i\n", blockCount);
-  printf("rootDirIndex is: %i\n", rootDirIndex);
-  printf("dataBlockStartIndex is: %i\n", dataBlockStartIndex);
-  printf("dataBlockCount is: %i\n", dataBlockCount);
-  printf("fatBlockCount is: %i\n", fatBlockCount);
+  printf("Signature is: %lu\n", '0' + superBlock.signature);
+  printf("blockCount is: %i\n", superBlock.blockCount);
+  printf("rootDirIndex is: %i\n", superBlock.rootDirIndex);
+  printf("dataBlockStartIndex is: %i\n", superBlock.dataBlockStartIndex);
+  printf("dataBlockCount is: %i\n", superBlock.dataBlockCount);
+  printf("fatBlockCount is: %i\n", superBlock.fatBlockCount);
 }
 
 int fs_create(const char *filename)
