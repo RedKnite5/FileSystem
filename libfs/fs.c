@@ -7,8 +7,11 @@
 #include "disk.h"
 #include "fs.h"
 
+#define SUPER_PADDING 4079
+#define FAT_PADDING 10
+
 /* TODO: Phase 1 */
-typedef struct superBlock((__packed__)) 
+typedef struct __attribute__ (__packed__) superBlock
 {
   uint64_t signature;
   uint16_t blockCount;
@@ -16,21 +19,26 @@ typedef struct superBlock((__packed__))
   uint16_t dataBlockStartIndex;
   uint16_t dataBlockCount;
   uint8_t  fatBlockCount;
-  uint8_t  padding[4079]
+  uint8_t  padding[SUPER_PADDING]
 }
 
-typedef struct fat((__packed__)) 
+typedef struct __attribute__ (__packed__) fat
 {
   //N = Number of data blocks
   uint16_t* fat[]= malloc(sizeof(*fat) * N);
 }
 
-typedef struct rootDir((__packed__)) 
+typedef struct __attribute__ (__packed__) rootDirEntry 
 {
   //The root directory is an array of 128 entries
-  uint32_t fat[FS_FILE_MAX_COUNT];
+  char filename[16];
+  uint64_t size;
+  uint32_t start_index;
+  uint8_t padding[FAT_PADDING];
   //Formatting of entries designated for functions
 }
+
+rootDirEntry rootDir[FS_FILE_MAX_COUNT];
 
 //Global Variables
 static struct superBlock superBlock;
