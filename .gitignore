@@ -3,3 +3,4 @@ replit.nix
 .replit
 .cache
 .bashrc
+*.d
