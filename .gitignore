@@ -1,0 +1,6 @@
+replit.nix
+.ccls-cache
+.replit
+.cache
+.bashrc
+*.d
