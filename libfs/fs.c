@@ -10,6 +10,7 @@
 #define SUPER_PADDING 4079
 #define FAT_PADDING 10
 #define FAT_EOC 0xFFFF
+
 //Change FAT_EOC to -1 if doesnt work
 /* TODO: Phase 1 */
 struct __attribute__ ((__packed__)) superBlock
@@ -111,28 +112,33 @@ int fs_info(void)
   return 0;
 }
 
-
 int fs_create(const char *filename)
 {
-  int creating = 1;
-  int entry = 1;
+  // still need to check that disk is mounted
+  if (strlen(filename) >= FS_FILENAME_LEN) {
+    return -1;
+  }
+  
 	//Initial size is 0
   //Index is -1, nothing in data block
   //Get name, size, index, add it to root
   //Check if root dir is empty
-  while (creating) {
-     if (rootDir[entry].filename[0] == '\0') {
-      for (int i = 0; i < strlen(filename); i++) {
-        rootDir[entry].filename[i] = filename[i];
-      }
-  //Error test this, filename is 16 bytes but we need to null terminate string
-      rootDir[entry].filename[strlen(filename) + 1] = '\0';
-      rootDir[entry].size = 0;
-      rootDir[entry].start_index = 0xFFFF;  
-      creating = 0;
-      return 0;
+  for (int entry=1; entry<FS_FILE_MAX_COUNT; entry++) {
+    if (rootDir[entry].filename[0] != '\0') {
+      continue;
     }
-    entry++; 
+
+    // check rest of directory for preexisting filename
+    for (int j=entry; j<FS_FILE_MAX_COUNT; j++) {
+      if (!strcmp(rootDir[j].filename, filename)) {
+        return -1;
+      }
+    }
+    
+    strcpy(rootDir[entry].filename, filename);
+    rootDir[entry].size = 0;
+    rootDir[entry].start_index = 0xFFFF;  
+    return 0;
   }
   return -1;
 }

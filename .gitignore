@@ -4,3 +4,4 @@ replit.nix
 .cache
 .bashrc
 *.d
+*.x
