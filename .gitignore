@@ -5,3 +5,4 @@ replit.nix
 .bashrc
 *.d
 *.x
+*.o
