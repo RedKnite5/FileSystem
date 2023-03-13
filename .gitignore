@@ -3,6 +3,7 @@ replit.nix
 .replit
 .cache
 .bashrc
+libfs.a
 *.d
 *.x
 *.o
