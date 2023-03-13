@@ -146,18 +146,21 @@ int fs_create(const char *filename)
 int fs_delete(const char *filename)
 {
 	/* TODO: Phase 2 */
-  //NUll terminated string
-  int deleting = 1;
-  int entry = 1;
-  while (deleting) {
-    if (!strcmp(rootDir[entry].filename, filename)) {
-      rootDir[entry].size = 0;
-      rootDir[entry].start_index = 0;  
-      rootDir[entry].filename[0] = '\0';
-      deleting = 0;
-      return 0;
+
+  // still need to check that disk is mounted
+  // and that file isn't open
+  if (strlen(filename) >= FS_FILENAME_LEN) {
+    return -1;
+  }
+  
+  for (int entry=1; entry<FS_FILE_MAX_COUNT; entry++) {
+    if (strcmp(rootDir[entry].filename, filename)) {
+      continue;
     }
-    entry++;
+    rootDir[entry].size = 0;
+    rootDir[entry].start_index = 0;  
+    rootDir[entry].filename[0] = '\0';
+    return 0;
   }
   return -1;
 }
