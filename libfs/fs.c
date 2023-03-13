@@ -114,8 +114,7 @@ int fs_info(void)
 
 int fs_create(const char *filename)
 {
-  // still need to check that disk is mounted
-  if (strlen(filename) >= FS_FILENAME_LEN) {
+  if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
     return -1;
   }
   
@@ -147,9 +146,8 @@ int fs_delete(const char *filename)
 {
 	/* TODO: Phase 2 */
 
-  // still need to check that disk is mounted
-  // and that file isn't open
-  if (strlen(filename) >= FS_FILENAME_LEN) {
+  // still need to check that file isn't open
+  if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
     return -1;
   }
   
