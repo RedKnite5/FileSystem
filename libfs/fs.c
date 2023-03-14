@@ -54,10 +54,10 @@ void _setOpenFileTableDefaults(void) {
 }
 
 int fs_mount(const char *diskname) {
-  int rootIndex;
+  int rootIndex = 0;
   uint8_t bytes[8];
   //char input[8];
-  char sig[8] = {'E', 'C', 'S', '1', '5', '0', 'F', 'S'};
+  char sig[] = "ECS150FS"; //{'E', 'C', 'S', '1', '5', '0', 'F', 'S'};
 	/* TODO: Phase 1 */
   //Open disk, store info in data structures?
   if(block_disk_open(diskname)) {
@@ -67,17 +67,14 @@ int fs_mount(const char *diskname) {
   block_read(0, &superBlock);
   int N = superBlock.fatBlockCount;
   fat = malloc(sizeof(uint16_t) * N);
-  for ( int i = 0; i < 8; i++ )
-    {
-        bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
+  for (int i = 0; i < 8; i++) {
+    bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
+  }
+  for (int i = 0; i < 8; i++) {
+    if(sig[i] != (char)bytes[i]) {
+      return -1;
     }
-    //print the individual bytes
-  for ( int i = 0; i < 8; i++ )
-    {
-        if(sig[i] != (char)bytes[i]) {
-          return -1;
-        }
-    }
+  }
   
   //FAT
   for (int i = 1; i < N; i++) {
@@ -102,17 +99,15 @@ int fs_umount(void) {
 int fs_info(void) {
 	/* TODO: Phase 1 */
   uint8_t bytes[8];
-    for ( int i = 0; i < 8; i++ )
-    {
-        bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
-    }
+  for (int i = 0; i < 8; i++) {
+    bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
+  }
 
     //print the individual bytes
   printf("Signature is: ");
-    for ( int i = 0; i < 8; i++ )
-    {
-        printf( "%c", bytes[i] );
-    }
+  for ( int i = 0; i < 8; i++ ) {
+    printf( "%c", bytes[i] );
+  }
   printf( "\n" );
   printf("blockCount is: %i\n", superBlock.blockCount);
   printf("rootDirIndex is: %i\n", superBlock.rootDirIndex);
@@ -122,8 +117,7 @@ int fs_info(void) {
   return 0;
 }
 
-int fs_create(const char *filename)
-{
+int fs_create(const char *filename) {
   if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
     return -1;
   }
