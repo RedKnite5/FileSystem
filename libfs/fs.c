@@ -53,8 +53,7 @@ void _setOpenFileTableDefaults(void) {
   }
 }
 
-int fs_mount(const char *diskname)
-{
+int fs_mount(const char *diskname) {
   int rootIndex;
   uint8_t bytes[8];
   //char input[8];
@@ -91,8 +90,7 @@ int fs_mount(const char *diskname)
   return 0;
 }
 
-int fs_umount(void)
-{
+int fs_umount(void) {
   //TODO: Check for current open file descriptors
 	/* TODO: Phase 1 */
   if (block_disk_close() == -1) {
@@ -101,8 +99,7 @@ int fs_umount(void)
   return 0;
 }
 
-int fs_info(void)
-{
+int fs_info(void) {
 	/* TODO: Phase 1 */
   uint8_t bytes[8];
     for ( int i = 0; i < 8; i++ )
@@ -155,8 +152,7 @@ int fs_create(const char *filename)
   return -1;
 }
 
-int fs_delete(const char *filename)
-{
+int fs_delete(const char *filename) {
 	/* TODO: Phase 2 */
   // still need to check that file isn't open
   if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
@@ -175,8 +171,7 @@ int fs_delete(const char *filename)
   return -1;
 }
 
-int fs_ls(void)
-{
+int fs_ls(void) {
   if (block_disk_count() == -1) {
     return -1;
   }
@@ -188,8 +183,7 @@ int fs_ls(void)
   return 0;
 }
 
-int fs_open(const char *filename)
-{
+int fs_open(const char *filename) {
 	/* TODO: Phase 3 */
   if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
     return -1;
@@ -217,27 +211,38 @@ int fs_open(const char *filename)
   return -1;
 }
 
-int fs_close(int fd)
-{
+int fs_close(int fd) {
 	/* TODO: Phase 3 */
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
+    return -1;
+  }
+
+  // does anything else need to be done?
+  openFileTable[fd].filenum = -1;
+  return 0;
 }
 
-int fs_stat(int fd)
-{
+int fs_stat(int fd) {
 	/* TODO: Phase 3 */
+  
 }
 
-int fs_lseek(int fd, size_t offset)
-{
+int fs_lseek(int fd, size_t offset) {
 	/* TODO: Phase 3 */
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
+    return -1;
+  }
+
+  // TODO: if fd is greater than filesize return -1
+
+  openFileTable[fd].offset = offset;
+  return 0;
 }
 
-int fs_write(int fd, void *buf, size_t count)
-{
+int fs_write(int fd, void *buf, size_t count) {
 	/* TODO: Phase 4 */
 }
 
-int fs_read(int fd, void *buf, size_t count)
-{
+int fs_read(int fd, void *buf, size_t count) {
 	/* TODO: Phase 4 */
 }
