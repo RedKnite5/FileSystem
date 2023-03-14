@@ -3,7 +3,7 @@ lib     := libfs.a
 objs    := fs.o disk.o
 CC      := gcc
 AR      := ar
-CFLAGS  := -Wall -MMD
+CFLAGS  := -Wall -Wextra -MMD
 AFLAGS  := rcs
 
 all: $(lib)

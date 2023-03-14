@@ -15,6 +15,7 @@ do {                                                     \
 int main(int argc, char *argv[])
 {
 	int ret;
+  int fd;
 	char *diskname;
 
 	if (argc < 1) {
@@ -31,8 +32,16 @@ int main(int argc, char *argv[])
 	ret = fs_create("myfile");
 	ASSERT(!ret, "fs_create");
 
+  ret = fs_create("myfile2");
+	ASSERT(!ret, "fs_create");
+
 	ret = fs_create("This_Filename_is_too_long");
 	ASSERT(ret, "fs_create");
+
+  fs_ls();
+
+  fd = fs_open("myfile");
+	ASSERT(fd >= 0, "fs_open");
 
 	fs_umount();
 

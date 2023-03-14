@@ -28,23 +28,36 @@ struct __attribute__ ((__packed__)) rootDirEntry
 {
   //The root directory is an array of 128 entries
   char filename[FS_FILENAME_LEN];
-  uint64_t size;
-  uint32_t start_index;
+  uint32_t size;
+  uint16_t start_index;
   uint8_t padding[FAT_PADDING];
   //Formatting of entries designated for functions
 };
-uint16_t *fat;
+
+struct __attribute__ ((__packed__)) openFile {
+  int32_t filenum;
+  uint32_t offset;
+};
 
 
 //Global Variables
+uint16_t *fat;  // array of unknown length
 static struct superBlock superBlock;
 static struct rootDirEntry rootDir[FS_FILE_MAX_COUNT];
+static struct openFile openFileTable[FS_OPEN_MAX_COUNT];
+// set defaults
+void _setOpenFileTableDefaults(void) {
+  for (int __OPENFILE=0; __OPENFILE<FS_OPEN_MAX_COUNT; __OPENFILE++) {
+    openFileTable[__OPENFILE].filenum = -1;
+    openFileTable[__OPENFILE].offset = 0;
+  }
+}
 
 int fs_mount(const char *diskname)
 {
   int rootIndex;
   uint8_t bytes[8];
-  char input[8];
+  //char input[8];
   char sig[8] = {'E', 'C', 'S', '1', '5', '0', 'F', 'S'};
 	/* TODO: Phase 1 */
   //Open disk, store info in data structures?
@@ -75,7 +88,7 @@ int fs_mount(const char *diskname)
   
   //RootDirectory
   block_read(rootIndex+1, &rootDir);
-  
+  return 0;
 }
 
 int fs_umount(void)
@@ -145,7 +158,6 @@ int fs_create(const char *filename)
 int fs_delete(const char *filename)
 {
 	/* TODO: Phase 2 */
-
   // still need to check that file isn't open
   if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
     return -1;
@@ -165,22 +177,44 @@ int fs_delete(const char *filename)
 
 int fs_ls(void)
 {
-  int success = -1;
+  if (block_disk_count() == -1) {
+    return -1;
+  }
   for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
     if (rootDir[i].filename[0] != '\0') {
-      for (int j = 0; j < strlen(rootDir[i].filename); j++) {
-        printf("%c", rootDir[i].filename[j]);
-        success = 1;
-      }
-      printf("\n");
+      printf("%s\n", rootDir[i].filename);
     }
   }
-  return success;
+  return 0;
 }
 
 int fs_open(const char *filename)
 {
 	/* TODO: Phase 3 */
+  if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
+    return -1;
+  }
+
+  int index = -1;
+  for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
+    if (!strcmp(rootDir[i].filename, filename)) {
+      index = i;
+    }
+  }
+  if (index == -1) {
+    // file not found
+    return -1;
+  }
+  
+  for (int i=0; i<FS_OPEN_MAX_COUNT; i++) {
+    if (openFileTable[i].filenum == -1) {
+      continue;
+    }
+    openFileTable[i].filenum = index;
+    openFileTable[i].offset = 0;
+    return 0;
+  }
+  return -1;
 }
 
 int fs_close(int fd)
