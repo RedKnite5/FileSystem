@@ -11,6 +11,12 @@
 #define FAT_PADDING 10
 #define FAT_EOC 0xFFFF
 
+#if 0
+  #define error(msg) fprintf(stderr, msg)
+#else
+  #define error(msg) do {} while (0)
+#endif
+
 //Change FAT_EOC to -1 if doesnt work
 /* TODO: Phase 1 */
 struct __attribute__ ((__packed__)) superBlock
@@ -34,7 +40,8 @@ struct __attribute__ ((__packed__)) rootDirEntry
   //Formatting of entries designated for functions
 };
 
-struct __attribute__ ((__packed__)) openFile {
+struct __attribute__ ((__packed__)) openFile
+{
   int32_t filenum;
   uint32_t offset;
 };
@@ -45,7 +52,7 @@ uint16_t *fat;  // array of unknown length
 static struct superBlock superBlock;
 static struct rootDirEntry rootDir[FS_FILE_MAX_COUNT];
 static struct openFile openFileTable[FS_OPEN_MAX_COUNT];
-// set defaults
+
 void _setOpenFileTableDefaults(void) {
   for (int __OPENFILE=0; __OPENFILE<FS_OPEN_MAX_COUNT; __OPENFILE++) {
     openFileTable[__OPENFILE].filenum = -1;
@@ -57,12 +64,13 @@ int fs_mount(const char *diskname) {
   int rootIndex = 0;
   uint8_t bytes[8];
   //char input[8];
-  char sig[] = "ECS150FS"; //{'E', 'C', 'S', '1', '5', '0', 'F', 'S'};
+  char sig[] = "ECS150FS";
 	/* TODO: Phase 1 */
   //Open disk, store info in data structures?
   if(block_disk_open(diskname)) {
     return -1;
   }
+  _setOpenFileTableDefaults();
   //superBlock
   block_read(0, &superBlock);
   int N = superBlock.fatBlockCount;
@@ -181,6 +189,7 @@ int fs_open(const char *filename) {
 	/* TODO: Phase 3 */
   if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
     return -1;
+    error("invalid filename or disk not mounted\n");
   }
 
   int index = -1;
@@ -191,17 +200,19 @@ int fs_open(const char *filename) {
   }
   if (index == -1) {
     // file not found
+    error("file not found\n");
     return -1;
   }
   
   for (int i=0; i<FS_OPEN_MAX_COUNT; i++) {
-    if (openFileTable[i].filenum == -1) {
+    if (openFileTable[i].filenum != -1) {
       continue;
     }
     openFileTable[i].filenum = index;
     openFileTable[i].offset = 0;
     return 0;
   }
+  error("no open space\n");
   return -1;
 }
 
@@ -226,9 +237,10 @@ int fs_lseek(int fd, size_t offset) {
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
     return -1;
   }
-
-  // TODO: if fd is greater than filesize return -1
-
+  if (offset > rootDir[openFileTable[fd].filenum].size) {
+    error("offset larger than file\n");
+    return -1;
+  }
   openFileTable[fd].offset = offset;
   return 0;
 }
