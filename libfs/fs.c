@@ -229,7 +229,11 @@ int fs_close(int fd) {
 
 int fs_stat(int fd) {
 	/* TODO: Phase 3 */
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
+    return -1;
+  }
   
+  return rootDir[openFileTable[fd].filenum].size;
 }
 
 int fs_lseek(int fd, size_t offset) {

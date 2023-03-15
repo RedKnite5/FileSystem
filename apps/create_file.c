@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
   fd = fs_open("myfile");
 	ASSERT(fd >= 0, "fs_open");
 
+  printf("fs_stat: %d\n", fs_stat(fd));
+
 	fs_umount();
 
   printf("Success!\n");
