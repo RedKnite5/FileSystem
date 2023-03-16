@@ -264,7 +264,8 @@ int fs_read(int fd, void *buf, size_t count) {
   char bounce[BLOCK_SIZE];
   int total = 0;
   int excess = 0;
-  block_read(fd, bounce);
+  int block = rootDir[fd].start_index;
+  block_read(block, bounce);
   /*Special situations:
     Too long
     Too short
@@ -281,15 +282,20 @@ int fs_read(int fd, void *buf, size_t count) {
   
   // what if we run out of file to read?
   while (count) {
-    if (count > BLOCK_SIZE) {
+    block = fat[block];
+    //end of file
+    if (block == FAT_EOC) {
+      return total;
+    }
+    if (count >= BLOCK_SIZE) {
       // read into buffer
-      // blockread(#, buf);
+      block_read(block, buf);
       total += BLOCK_SIZE;
       count -= BLOCK_SIZE;
       openFileTable[fd].offset += BLOCK_SIZE;
       continue;
     }
-    //blockread(#, bounce);
+    block_read(block, bounce);
     block_read(openFileTable[fd].filenum, bounce);
     memcpy(buf, bounce, count);
     total += count;
