@@ -261,11 +261,10 @@ int fs_read(int fd, void *buf, size_t count) {
     return -1;
     }
   //Assumption: openFileTable is file table, fd is file descriptor
-  int offset = openFileTable[fd].offset;
   char bounce[BLOCK_SIZE];
   int total = 0;
   int excess = 0;
-  block_read(0, bounce);
+  block_read(openFileTable[fd].offset / BLOCK_SIZE, bounce);
   /*Special situations:
     Too long
     Too short
@@ -273,49 +272,27 @@ int fs_read(int fd, void *buf, size_t count) {
   */
 
   // first block
-  int left_in_block = BLOCK_SIZE - (offset % BLOCK_SIZE);
+  int left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
   int to_copy = MIN(left_in_block, count);
-  memcpy(buf, bounce+offset, to_copy);
+  memcpy(buf, bounce+openFileTable[fd].offset, to_copy);
   total += to_copy;
-  
-  //Overflow
-  if (count > BLOCK_SIZE) {
-    excess += count - BLOCK_SIZE;
-    count = BLOCK_SIZE;
-  }
-  //Start in middle
-  if (offset + count > BLOCK_SIZE) {
-    excess += count - offset;
-    count = count - offset;
-  }
-  //First block read
-  int left_in_block = BLOCK_SIZE - (offset % BLOCK_SIZE);
-  int to_copy = min(left_in_block, original_count);
-  memcpy(buf, bounce+offset, to_copy);
-  total += to_copy;
-  //Excess block read greater than 4096
-  while (excess > BLOCK_SIZE) {
-    //Constantly read 4096 bytes until excess is no longer > 4096
-    for (int i = 0; i < BLOCK_SIZE; i++) {
-      //From new block to max bytes, read from bounce to buffer
-      //psuedocode below
-      if (bounce[i] != NULL) {
-        buf = bounce[i];
-        total++;
-      }
+  count -= to_copy;
+  openFileTable[fd].offset += to_copy;
+
+  // what if we run out of file to read?
+  while (count) {
+    if (count > BLOCK_SIZE) {
+      // read into buffer
+      // blockread(#, buf);
+      total += BLOCK_SIZE;
+      count -= BLOCK_SIZE;
+      openFileTable[fd].offset += BLOCK_SIZE;
+      continue;
     }
-    excess -= BLOCK_SIZE;
-  }
-  //Remaining excess < 4096 bytes
-  if (excess) {
-    for (int i = 0; i < excess; i++) {
-      //From new block to excess bytes, read from bounce to buffer
-      //psuedocode below
-      if (bounce[i] != NULL) {
-        buf = bounce[i];
-        total++;
-      }
-    }
+    //blockread(#, bounce);
+    memcpy(buf, bounce, count);
+    total += count;
+    openFileTable[fd].offset += count;
   }
   return total;
 }
