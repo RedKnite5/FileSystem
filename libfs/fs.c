@@ -264,7 +264,7 @@ int fs_read(int fd, void *buf, size_t count) {
   char bounce[BLOCK_SIZE];
   int total = 0;
   int excess = 0;
-  block_read(openFileTable[fd].offset / BLOCK_SIZE, bounce);
+  block_read(fd, bounce);
   /*Special situations:
     Too long
     Too short
@@ -278,7 +278,7 @@ int fs_read(int fd, void *buf, size_t count) {
   total += to_copy;
   count -= to_copy;
   openFileTable[fd].offset += to_copy;
-
+  
   // what if we run out of file to read?
   while (count) {
     if (count > BLOCK_SIZE) {
@@ -290,6 +290,7 @@ int fs_read(int fd, void *buf, size_t count) {
       continue;
     }
     //blockread(#, bounce);
+    block_read(openFileTable[fd].filenum, bounce);
     memcpy(buf, bounce, count);
     total += count;
     openFileTable[fd].offset += count;

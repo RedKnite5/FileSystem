@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
   fs_ls();
   fs_delete("Roger");
   fs_ls();
+  fs_read("Is");
 	fs_umount();
 
 	return 0;
