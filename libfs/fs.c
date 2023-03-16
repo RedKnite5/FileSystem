@@ -259,10 +259,11 @@ int fs_read(int fd, void *buf, size_t count) {
     return -1;
     }
   //Assumption: openFileTable is file table, fd is file descriptor
-  char *bounce[count];
+  int offset = openFileTable[fd].offset;
+  char bounce[BLOCK_SIZE];
   int total = 0;
   int excess = 0;
-  block_read(0, &bounce);
+  block_read(0, bounce);
   /*Special situations:
     Too long
     Too short
@@ -274,19 +275,14 @@ int fs_read(int fd, void *buf, size_t count) {
     count = BLOCK_SIZE;
   }
   //Start in middle
-  if (openFileTable[fd].offset + count > BLOCK_SIZE) {
-    excess += count - openFileTable[fd].offset;
-    count = count - openFileTable[fd].offset;
+  if (offset + count > BLOCK_SIZE) {
+    excess += count - offset;
+    count = count - offset;
   }
   //First block read
-  for (int i = openFileTable[fd].offset; i < count; i++) {
-    //From offset to bytes read, read from bounce to buffer
-    //psuedocode below
-    if (bounce[i] != NULL) {
-      buf = bounce[i];
-      total++;
-    }
-  }
+  int to_copy = BLOCK_SIZE - (offset % BLOCK_SIZE);
+  memcpy(buf, bounce+offset, to_copy);
+  total += to_copy;
   //Excess block read greater than 4096
   while (excess > BLOCK_SIZE) {
     //Constantly read 4096 bytes until excess is no longer > 4096
