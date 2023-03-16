@@ -253,6 +253,23 @@ int fs_lseek(int fd, size_t offset) {
 
 int fs_write(int fd, void *buf, size_t count) {
 	/* TODO: Phase 4 */
+  /*Similar logic to FS_READ
+    Steps to figure out:
+      Block still has empty space to write to, stop when reach end
+      Find next empty block to write to if overflows
+  */
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
+    return -1;
+    }
+  char bounce[BLOCK_SIZE];
+  int total = 0;
+  int excess = 0;
+  //bounce = buf;
+  //Detect empty space in buffer
+  //write directly to block, we dont care whats inside
+  int left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
+  int to_write = MIN(left_in_block, count);
+  //memcpy(buf, bounce+openFileTable[fd].offset, to_copy);
 }
 
 int fs_read(int fd, void *buf, size_t count) {
