@@ -298,7 +298,7 @@ int fs_read(int fd, void *buf, size_t count) {
         total++;
       }
     }
-    excess =- BLOCK_SIZE;
+    excess -= BLOCK_SIZE;
   }
   //Remaining excess < 4096 bytes
   if (excess) {
@@ -311,6 +311,5 @@ int fs_read(int fd, void *buf, size_t count) {
       }
     }
   }
-  
   return total;
 }
