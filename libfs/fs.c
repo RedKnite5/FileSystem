@@ -255,4 +255,62 @@ int fs_write(int fd, void *buf, size_t count) {
 
 int fs_read(int fd, void *buf, size_t count) {
 	/* TODO: Phase 4 */
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
+    return -1;
+    }
+  //Assumption: openFileTable is file table, fd is file descriptor
+  char *bounce[count];
+  int total = 0;
+  int excess = 0;
+  block_read(0, &bounce);
+  /*Special situations:
+    Too long
+    Too short
+    Starts halfway, overflows into another
+  */
+  //Overflow
+  if (count > BLOCK_SIZE) {
+    excess += count - BLOCK_SIZE;
+    count = BLOCK_SIZE;
+  }
+  //Start in middle
+  if (openFileTable[fd].offset + count > BLOCK_SIZE) {
+    excess += count - openFileTable[fd].offset;
+    count = count - openFileTable[fd].offset;
+  }
+  //First block read
+  for (int i = openFileTable[fd].offset; i < count; i++) {
+    //From offset to bytes read, read from bounce to buffer
+    //psuedocode below
+    if (bounce[i] != NULL) {
+      buf = bounce[i];
+      total++;
+    }
+  }
+  //Excess block read greater than 4096
+  while (excess > BLOCK_SIZE) {
+    //Constantly read 4096 bytes until excess is no longer > 4096
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+      //From new block to max bytes, read from bounce to buffer
+      //psuedocode below
+      if (bounce[i] != NULL) {
+        buf = bounce[i];
+        total++;
+      }
+    }
+    excess =- BLOCK_SIZE;
+  }
+  //Remaining excess < 4096 bytes
+  if (excess) {
+    for (int i = 0; i < excess; i++) {
+      //From new block to excess bytes, read from bounce to buffer
+      //psuedocode below
+      if (bounce[i] != NULL) {
+        buf = bounce[i];
+        total++;
+      }
+    }
+  }
+  
+  return total;
 }
