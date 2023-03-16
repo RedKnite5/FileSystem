@@ -210,7 +210,7 @@ int fs_open(const char *filename) {
     }
     openFileTable[i].filenum = index;
     openFileTable[i].offset = 0;
-    return 0;
+    return index;
   }
   error("no open space\n");
   return -1;
