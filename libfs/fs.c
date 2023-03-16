@@ -17,6 +17,8 @@
   #define error(msg) do {} while (0)
 #endif
 
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
 //Change FAT_EOC to -1 if doesnt work
 /* TODO: Phase 1 */
 struct __attribute__ ((__packed__)) superBlock
@@ -269,6 +271,13 @@ int fs_read(int fd, void *buf, size_t count) {
     Too short
     Starts halfway, overflows into another
   */
+
+  // first block
+  int left_in_block = BLOCK_SIZE - (offset % BLOCK_SIZE);
+  int to_copy = MIN(left_in_block, count);
+  memcpy(buf, bounce+offset, to_copy);
+  total += to_copy;
+  
   //Overflow
   if (count > BLOCK_SIZE) {
     excess += count - BLOCK_SIZE;
@@ -280,7 +289,8 @@ int fs_read(int fd, void *buf, size_t count) {
     count = count - offset;
   }
   //First block read
-  int to_copy = BLOCK_SIZE - (offset % BLOCK_SIZE);
+  int left_in_block = BLOCK_SIZE - (offset % BLOCK_SIZE);
+  int to_copy = min(left_in_block, original_count);
   memcpy(buf, bounce+offset, to_copy);
   total += to_copy;
   //Excess block read greater than 4096
