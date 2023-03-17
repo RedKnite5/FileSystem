@@ -10,6 +10,7 @@
 #define SUPER_PADDING 4079
 #define FAT_PADDING 10
 #define FAT_EOC 0xFFFF
+#define ENTRIES_PER_FATBLOCK 2048
 
 #if 0
   #define error(msg) fprintf(stderr, msg)
@@ -76,7 +77,7 @@ int fs_mount(const char *diskname) {
   //superBlock
   block_read(0, &superBlock);
   int N = superBlock.fatBlockCount;
-  fat = malloc(sizeof(uint16_t) * N);
+  fat = malloc(sizeof(uint16_t) * ENTRIES_PER_FATBLOCK * N);
   for (int i = 0; i < 8; i++) {
     bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
   }
@@ -88,12 +89,12 @@ int fs_mount(const char *diskname) {
   
   //FAT
   for (int i = 1; i < N; i++) {
-    block_read(i, &fat[i * BLOCK_SIZE]);
+    block_read(i, &fat[i * BLOCK_SIZE / sizeof(uint16_t)]);
     rootIndex = i;
   }
   
   //RootDirectory
-  block_read(rootIndex+1, &rootDir);
+  block_read(superBlock.rootDirIndex, rootDir);
   return 0;
 }
 
