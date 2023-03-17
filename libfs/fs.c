@@ -120,10 +120,8 @@ int fs_info(void) {
   printf("rdir_blk=%i\n", superBlock.rootDirIndex);
   printf("data_blk=%i\n", superBlock.dataBlockStartIndex);
   printf("data_blk_count=%i\n", superBlock.dataBlockCount);
-  for (int i=0; i<FS_OPEN_MAX_COUNT; i++) {
-    if (openFileTable[i].filenum != 0) {
-        occupied++;
-    }
+  for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
+    printf("%i", rootDir[i].start_index);
   }
   occupied = superBlock.dataBlockCount - occupied;
   printf("fat_free_ratio=%i/%i\n", occupied, superBlock.dataBlockCount);
@@ -164,6 +162,7 @@ int fs_create(const char *filename) {
     strcpy(rootDir[entry].filename, filename);
     rootDir[entry].size = 0;
     rootDir[entry].start_index = 0xFFFF;  
+  block_write(superBlock.rootDirIndex,&rootDir);
     return 0;
   }
   return -1;
@@ -287,6 +286,15 @@ int fs_write(int fd, void *buf, size_t count) {
     }
   char bounce[count];
   int total = 0;
+  //Make sure to change block pos from -1 (empty) to an actual data block location
+  if (rootDir[openFileTable[fd].filenum].start_index = -1) {
+    for (int i = 0; i < superBlock.dataBlockCount; i++) {
+      if (fat[i] == 0) {
+        rootDir[openFileTable[fd].filenum].start_index = i;
+        break;
+      }
+    }  
+  }
   uint16_t block = rootDir[openFileTable[fd].filenum].start_index + superBlock.fatBlockCount + 2;
   //Step 1
   memcpy(bounce, buf, count);

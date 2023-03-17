@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   ret = fs_mount(diskname);
   ASSERT(!ret, "fs_mount");
   fs_info();
-
+  fs_delete("Roger");
   fs_ls();
   int fd_open = fs_open("simple_writer.c");
   fs_stat(fd_open);
