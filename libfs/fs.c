@@ -250,6 +250,19 @@ int fs_lseek(int fd, size_t offset) {
   return 0;
 }
 
+int find_available_block(int start) {
+  /*
+  return the block number of the free block. 1 is the first data block.
+  return -1 if there are no free blocks.
+  */
+  for (int i=start; i<FS_FILE_MAX_COUNT; i++) {
+    if (fat[i] == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 int fs_write(int fd, void *buf, size_t count) {
 	/* TODO: Phase 4 */
   /*Similar logic to FS_READ
@@ -257,18 +270,22 @@ int fs_write(int fd, void *buf, size_t count) {
       Block still has empty space to write to, stop when reach end
       Find next empty block to write to if overflows
   */
-  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1 || buf == NULL) {
     return -1;
-    }
+  }
   char bounce[BLOCK_SIZE];
   int total = 0;
-  int excess = 0;
-  //bounce = buf;
+  int block = rootDir[openFileTable[fd].filenum].start_index;
+  if (block == FAT_EOC) {
+    // allocate new block
+    block = find_available_block(1);
+    
+  }
   //Detect empty space in buffer
   //write directly to block, we dont care whats inside
   int left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
   int to_write = MIN(left_in_block, count);
-  memcpy(buf, bounce+openFileTable[fd].offset, to_write);
+  memcpy(bounce+openFileTable[fd].offset, buf, to_write);
   //Check to see if next block is empty
 }
 
@@ -277,7 +294,12 @@ int fs_read(int fd, void *buf, size_t count) {
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
     return -1;
     }
-  //Assumption: openFileTable is file table, fd is file descriptor
+
+  if (rootDir[openFileTable[fd].filenum].start_index == FAT_EOC) {
+    // empty file
+    return 0;
+  }
+  
   char bounce[BLOCK_SIZE];
   int total = 0;
   uint16_t block = rootDir[openFileTable[fd].filenum].start_index + superBlock.fatBlockCount + 2;
