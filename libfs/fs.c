@@ -88,7 +88,7 @@ int fs_mount(const char *diskname) {
   
   //FAT
   for (int i = 1; i < N; i++) {
-    block_read(i, &fat[i * BLOCK_SIZE / sizeof(uint16_t)]);
+    block_read(i, &fat[(i-1) * BLOCK_SIZE / sizeof(uint16_t)]);
   }
   
   //RootDirectory
