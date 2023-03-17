@@ -290,7 +290,7 @@ int fs_write(int fd, void *buf, size_t count) {
   char bounce[count];
   int total = 0;
   //Make sure to change block pos from -1 (empty) to an actual data block location
-  if (rootDir[openFileTable[fd].filenum].start_index = -1) {
+  if (rootDir[openFileTable[fd].filenum].start_index == -1) {
     for (int i = 0; i < superBlock.dataBlockCount; i++) {
       if (fat[i] == 0) {
         rootDir[openFileTable[fd].filenum].start_index = i;
@@ -347,10 +347,17 @@ int fs_read(int fd, void *buf, size_t count) {
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
     return -1;
     }
+  printf("rootDir %i\n", rootDir[openFileTable[fd].filenum].size);
+  printf("count %i\n", count);
+  if (count > rootDir[openFileTable[fd].filenum].size) {
+    count = rootDir[openFileTable[fd].filenum].size;
+  }
+  printf("count %i\n", count);
   //Assumption: openFileTable is file table, fd is file descriptor
   char bounce[BLOCK_SIZE];
   int total = 0;
   uint16_t block = rootDir[openFileTable[fd].filenum].start_index + superBlock.fatBlockCount + 2;
+  
   block_read(block, bounce);
   /*Special situations:
     Too long
