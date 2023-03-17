@@ -269,7 +269,8 @@ int fs_write(int fd, void *buf, size_t count) {
   //write directly to block, we dont care whats inside
   int left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
   int to_write = MIN(left_in_block, count);
-  //memcpy(buf, bounce+openFileTable[fd].offset, to_copy);
+  memcpy(buf, bounce+openFileTable[fd].offset, to_write);
+  //Check to see if next block is empty
 }
 
 int fs_read(int fd, void *buf, size_t count) {

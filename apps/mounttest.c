@@ -27,7 +27,6 @@ int main(int argc, char *argv[])
 	ret = fs_mount(diskname);
 	ASSERT(!ret, "fs_mount");
   fs_info();
-
   fs_create("Roger");
   fs_create("Is");
   fs_create("Cool");
