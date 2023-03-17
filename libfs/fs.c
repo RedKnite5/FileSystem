@@ -8,7 +8,7 @@
 #include "fs.h"
 
 #define SUPER_PADDING 4079
-#define FAT_PADDING 10
+#define ROOTDIR_PADDING 10
 #define FAT_EOC 0xFFFF
 #define ENTRIES_PER_FATBLOCK 2048
 
@@ -39,7 +39,7 @@ struct __attribute__ ((__packed__)) rootDirEntry
   char filename[FS_FILENAME_LEN];
   uint32_t size;
   uint16_t start_index;
-  uint8_t padding[FAT_PADDING];
+  uint8_t padding[ROOTDIR_PADDING];
   //Formatting of entries designated for functions
 };
 
@@ -64,7 +64,6 @@ void _setOpenFileTableDefaults(void) {
 }
 
 int fs_mount(const char *diskname) {
-  int rootIndex = 0;
   uint8_t bytes[8];
   //char input[8];
   char sig[] = "ECS150FS";
@@ -90,7 +89,6 @@ int fs_mount(const char *diskname) {
   //FAT
   for (int i = 1; i < N; i++) {
     block_read(i, &fat[i * BLOCK_SIZE / sizeof(uint16_t)]);
-    rootIndex = i;
   }
   
   //RootDirectory
@@ -213,7 +211,7 @@ int fs_open(const char *filename) {
     }
     openFileTable[i].filenum = index;
     openFileTable[i].offset = 0;
-    return index;
+    return i;
   }
   error("no open space\n");
   return -1;
@@ -264,8 +262,7 @@ int fs_read(int fd, void *buf, size_t count) {
   //Assumption: openFileTable is file table, fd is file descriptor
   char bounce[BLOCK_SIZE];
   int total = 0;
-  int excess = 0;
-  int block = rootDir[fd].start_index;
+  uint16_t block = rootDir[openFileTable[fd].filenum].start_index + superBlock.fatBlockCount + 2;
   block_read(block, bounce);
   /*Special situations:
     Too long
@@ -297,10 +294,11 @@ int fs_read(int fd, void *buf, size_t count) {
       continue;
     }
     block_read(block, bounce);
-    block_read(openFileTable[fd].filenum, bounce);
+    //block_read(openFileTable[fd].filenum, bounce);
     memcpy(buf, bounce, count);
     total += count;
     openFileTable[fd].offset += count;
+    count = 0;
   }
   return total;
 }
