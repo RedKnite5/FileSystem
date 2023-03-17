@@ -120,8 +120,11 @@ int fs_info(void) {
   printf("rdir_blk=%i\n", superBlock.rootDirIndex);
   printf("data_blk=%i\n", superBlock.dataBlockStartIndex);
   printf("data_blk_count=%i\n", superBlock.dataBlockCount);
+  //Issue with fat table not being allocated
   for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
-    printf("%i", rootDir[i].start_index);
+    if (fat[i] != 0) {
+      occupied++;
+    }
   }
   occupied = superBlock.dataBlockCount - occupied;
   printf("fat_free_ratio=%i/%i\n", occupied, superBlock.dataBlockCount);
