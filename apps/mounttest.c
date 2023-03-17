@@ -5,6 +5,7 @@
 #include <fs.h>
 
 #define TO_READ 1000
+#define TO_WRITE 10
 
 #define ASSERT(cond, func)                                                     \
   do {                                                                         \
@@ -23,7 +24,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   char buf[TO_READ];
-
+  char tuff[TO_WRITE] = "HelloWorld";
   /* Mount disk */
   diskname = argv[1];
   ret = fs_mount(diskname);
@@ -35,11 +36,12 @@ int main(int argc, char *argv[]) {
   fs_create("Cool");
   fs_ls();
   fs_delete("Roger");
-  // fs_ls();
-  int fd_write = fs_open("simple_writer.c");
-  printf("fd_write: %d\n", fd_write);
-  printf("fs_stat: %d\n", fs_stat(fd_write));
-  fs_read(fd_write, buf, TO_READ);
+  int fd_open = fs_open("simple_writer.c");
+  printf("fd_write: %d\n", fd_open);
+  printf("fs_stat: %d\n", fs_stat(fd_open));
+  
+  fs_read(fd_open, buf, TO_READ);
+  //fs_write(fd_open, tuff, TO_WRITE);
   for (int i = 0; i < TO_READ; i++) {
     printf("%c", buf[i]);
   }
