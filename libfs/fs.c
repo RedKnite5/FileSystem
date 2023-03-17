@@ -289,6 +289,85 @@ int fs_write(int fd, void *buf, size_t count) {
   //Check to see if next block is empty
 }
 
+
+
+
+
+int fs_write(int fd, void *buf, size_t count) {
+/*Similar logic to FS_READ
+    Steps to figure out:
+      Block still has empty space to write to, stop when reach end
+      Find next empty block to write to if overflows
+
+  Steps to execute:
+    1. Copy buf into bounce buffer, buffer may be > block size
+    2. If bounce is > remaining space
+        write what you can, count remaining bytes
+        Look for next availiable block
+          *Check FAT, 0 means it is empty
+        Write to block, repeat 2 if new block is full
+        Set FAT to point at newly written block
+        If done writing, set FAT to FAT_EOC
+    3. Else
+      Write into disk
+*/
+  if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1 || buf == NULL) {
+    return -1;
+  }
+  char bounce[BLOCK_SIZE];
+  int total = 0;
+  //Make sure to change block pos from -1 (empty) to an actual data block location
+  if (rootDir[openFileTable[fd].filenum].start_index = FAT_EOC) {
+    rootDir[openFileTable[fd].filenum].start_index = find_available_block(1);
+  }
+  uint16_t block = rootDir[openFileTable[fd].filenum].start_index + superBlock.fatBlockCount + 2;
+  //Step 1
+  memcpy(bounce, buf, count);
+
+  //Step 2, Step 3
+  int left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
+  int to_write = MIN(left_in_block, count);
+  char remain[BLOCK_SIZE];
+  memcpy(remain, bounce, to_write);
+  block_write(block, remain);
+  total += to_write;
+  count -= to_write;
+  openFileTable[fd].offset += to_write;
+
+  //Step 2.5: Look for next block
+  while(count) {
+    block++;
+    if (block == 0) {
+      if (count >= BLOCK_SIZE) {
+        // read into buffer
+        memcpy(remain, bounce, count);
+        total += BLOCK_SIZE;
+        count -= BLOCK_SIZE;
+        openFileTable[fd].offset += BLOCK_SIZE;
+        openFileTable[fd].filenum = block;
+        fd = block;
+        block_write(block, remain);
+      } else {
+        memcpy(remain, bounce, count);
+        total += count;
+        count -= count;
+        openFileTable[fd].offset += count;
+        openFileTable[fd].filenum = 0xFFFF;
+        fd = block;
+        block_write(block, remain);
+      }
+      total += count;
+      openFileTable[fd].offset += count;
+    }
+  }
+  return total;
+  
+}
+
+
+
+
+
 int fs_read(int fd, void *buf, size_t count) {
 	/* TODO: Phase 4 */
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
