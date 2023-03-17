@@ -108,21 +108,35 @@ int fs_umount(void) {
 int fs_info(void) {
 	/* TODO: Phase 1 */
   uint8_t bytes[8];
+  int occupied = 0;
   for (int i = 0; i < 8; i++) {
     bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
   }
 
     //print the individual bytes
-  printf("Signature is: ");
-  for ( int i = 0; i < 8; i++ ) {
-    printf( "%c", bytes[i] );
+  printf("FS Info:\n");
+  printf("total_blk_count=%i\n", superBlock.blockCount);
+  printf("fat_blk_count=%i\n", superBlock.fatBlockCount);
+  printf("rdir_blk=%i\n", superBlock.rootDirIndex);
+  printf("data_blk=%i\n", superBlock.dataBlockStartIndex);
+  printf("data_blk_count=%i\n", superBlock.dataBlockCount);
+  for (int i=0; i<FS_OPEN_MAX_COUNT; i++) {
+    if (openFileTable[i].filenum != 0) {
+        occupied++;
+    }
   }
+  occupied = superBlock.dataBlockCount - occupied;
+  printf("fat_free_ratio=%i/%i\n", occupied, superBlock.dataBlockCount);
+  occupied = 0;
+  for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
+    if (rootDir[i].filename[0] != '\0') {
+      occupied++;
+    }
+  }
+  occupied = FS_FILE_MAX_COUNT - occupied;
+  printf("rdr_free_ratio=%i/%i", occupied, FS_FILE_MAX_COUNT);
   printf( "\n" );
-  printf("blockCount is: %i\n", superBlock.blockCount);
-  printf("rootDirIndex is: %i\n", superBlock.rootDirIndex);
-  printf("dataBlockStartIndex is: %i\n", superBlock.dataBlockStartIndex);
-  printf("dataBlockCount is: %i\n", superBlock.dataBlockCount);
-  printf("fatBlockCount is: %i\n", superBlock.fatBlockCount);
+  
   return 0;
 }
 
@@ -180,7 +194,7 @@ int fs_ls(void) {
   }
   for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
     if (rootDir[i].filename[0] != '\0') {
-      printf("%s\n", rootDir[i].filename);
+      printf("file: %s, size: %i, data_blk: %i\n", rootDir[i].filename, rootDir[i].size, rootDir[i].start_index);
     }
   }
   return 0;
@@ -233,7 +247,7 @@ int fs_stat(int fd) {
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
     return -1;
   }
-  
+  printf("Size of file '%s' is %i bytes\n", rootDir[openFileTable[fd].filenum].filename, rootDir[openFileTable[fd].filenum].size);
   return rootDir[openFileTable[fd].filenum].size;
 }
 
