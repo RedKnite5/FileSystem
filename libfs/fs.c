@@ -109,6 +109,11 @@ int fs_umount(void) {
 
 int fs_info(void) {
   /* TODO: Phase 1 */
+
+  if (block_disk_count() == -1) {
+    return -1;
+  }
+  
   int occupied = 0;
   // print the individual bytes
   printf("FS Info:\n");
