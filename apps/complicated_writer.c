@@ -62,11 +62,11 @@ int main(int argc, char *argv[])
 
   char buf[DATA];
   ret = fs_read(fd, buf, sizeof(data));
-  printf("read: %d\n", ret);
+  //printf("read: %d\n", ret);
   ASSERT(ret == sizeof(data), "fs_read");
 
   for (int i=1; i<DATA; i++) {
-    printf("%c  %c\n", data[i], buf[i]);
+    //printf("%c  %c\n", data[i], buf[i]);
     ASSERT(data[i-1] == buf[i-1], "read and write");
   }
   
