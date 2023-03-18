@@ -23,13 +23,18 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   char buf[TO_READ];
-
   /* Mount disk */
   diskname = argv[1];
   ret = fs_mount(diskname);
   ASSERT(!ret, "fs_mount");
   fs_info();
 
+
+  /* Mount disk */
+  diskname = argv[1];
+  ret = fs_mount(diskname);
+  ASSERT(!ret, "fs_mount");
+  fs_info();
   fs_create("Roger");
   fs_create("Is");
   fs_create("Cool");
