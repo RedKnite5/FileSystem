@@ -208,11 +208,13 @@ int fs_ls(void) {
     }
   }
 
-  // delte what is below
-  //for (int i = 0; i < 100; i++) {
-  //  printf("fat %d: %i\n", i, fat[i]);
-  //}
-  // delete what is above
+
+
+  ///////////////
+  for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
+    printf("fat[%i] is %i\n", i, fat[i]);
+  }
+  ///////////////
 
   return 0;
 }
@@ -293,6 +295,7 @@ int find_available_block(int start) {
   return -1 if there are no free blocks.
   */
   for (int i = start + 1; i < FS_FILE_MAX_COUNT; i++) {
+    printf("checking block %i: %i\n", i, fat[i]);
     if (fat[i] == 0) {
       return i;
     }
@@ -317,6 +320,11 @@ int fs_write(int fd, void *buf, size_t count) {
       openFileTable[fd].filenum == -1 || buf == NULL) {
     return -1;
   }
+
+  if (count == 0) {
+    return 0;
+  }
+
   char bounce[BLOCK_SIZE];
   int total = 0;
   // Make sure to change block pos from -1 (empty) to an actual data block
@@ -324,9 +332,9 @@ int fs_write(int fd, void *buf, size_t count) {
   if (rootDir[openFileTable[fd].filenum].start_index == FAT_EOC) {
     rootDir[openFileTable[fd].filenum].start_index = find_available_block(0);
   }
-  uint16_t block = rootDir[openFileTable[fd].filenum].start_index +
-                   superBlock.fatBlockCount + 2 +
-                   openFileTable[fd].offset / BLOCK_SIZE;
+  uint16_t start_index_offset = superBlock.fatBlockCount + 2;
+  // 0 is the first data block
+  uint16_t block = start_index_offset + rootDir[openFileTable[fd].filenum].start_index + openFileTable[fd].offset / BLOCK_SIZE;
   // Step 1
   block_read(block, bounce);
 
@@ -343,9 +351,10 @@ int fs_write(int fd, void *buf, size_t count) {
 
   // Step 2: Look for next block
   while (count) {
-    new_block = find_available_block(block);
-    fat[block] = new_block;
+    new_block = find_available_block(block-start_index_offset) + start_index_offset;
+    fat[block-start_index_offset] = new_block - start_index_offset;
     printf("block: %i\n", block);
+    printf("fat block: %i\n", block-start_index_offset);
     block = new_block;
 
     to_write = MIN(BLOCK_SIZE, count);
@@ -363,7 +372,7 @@ int fs_write(int fd, void *buf, size_t count) {
   }
   if (openFileTable[fd].offset > rootDir[openFileTable[fd].filenum].size) {
     rootDir[openFileTable[fd].filenum].size = openFileTable[fd].offset;
-    fat[block] = FAT_EOC;
+    fat[block-start_index_offset] = FAT_EOC;
   }
 
   block_write(superBlock.rootDirIndex, rootDir);
@@ -377,6 +386,11 @@ int fs_write(int fd, void *buf, size_t count) {
 
 int fs_read(int fd, void *buf, size_t count) {
   /* TODO: Phase 4 */
+  /*Special situations:
+    Too long
+    Too short
+    Starts halfway, overflows into another
+  */
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT ||
       openFileTable[fd].filenum == -1) {
     return -1;
@@ -389,21 +403,16 @@ int fs_read(int fd, void *buf, size_t count) {
 
   if (count > rootDir[openFileTable[fd].filenum].size - openFileTable[fd].offset) {
     count = rootDir[openFileTable[fd].filenum].size - openFileTable[fd].offset;
+    error("count capped\n");
   }
 
+  uint16_t start_index_offset = superBlock.fatBlockCount + 2;
   char bounce[BLOCK_SIZE];
   size_t total = 0;
 
-  uint16_t block = rootDir[openFileTable[fd].filenum].start_index +
-                   superBlock.fatBlockCount + 2 +
-                   openFileTable[fd].offset / BLOCK_SIZE;
+  uint16_t block = start_index_offset + rootDir[openFileTable[fd].filenum].start_index + openFileTable[fd].offset / BLOCK_SIZE;
 
   block_read(block, bounce);
-  /*Special situations:
-    Too long
-    Too short
-    Starts halfway, overflows into another
-  */
   // first block
   size_t left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
   size_t to_copy = MIN(left_in_block, count);
@@ -412,14 +421,14 @@ int fs_read(int fd, void *buf, size_t count) {
   count -= to_copy;
   openFileTable[fd].offset += to_copy;
 
-  // what if we run out of file to read?
+  printf("block: %i\n", block);
   while (count) {
-    block = fat[block];
+    block = fat[block-start_index_offset] + start_index_offset;
     printf("block: %i\n", block);
     // end of file
-    if (block == FAT_EOC) {
-      return total;
-    }
+    //if (block == FAT_EOC) {
+    //  return total;
+    //}
 
     to_copy = MIN(BLOCK_SIZE, count);
     if (count >= BLOCK_SIZE) {
