@@ -87,7 +87,7 @@ int fs_mount(const char *diskname) {
 
   // FAT
   for (int i = 1; i < N; i++) {
-    block_read(i, &fat[(i-1) * BLOCK_SIZE / sizeof(uint16_t)]);
+    block_read(i, &fat[(i - 1) * BLOCK_SIZE / sizeof(uint16_t)]);
   }
 
   // RootDirectory
@@ -107,15 +107,15 @@ int fs_umount(void) {
 int fs_info(void) {
   /* TODO: Phase 1 */
   int occupied = 0;
-  //print the individual bytes
+  // print the individual bytes
   printf("FS Info:\n");
   printf("total_blk_count=%i\n", superBlock.blockCount);
   printf("fat_blk_count=%i\n", superBlock.fatBlockCount);
   printf("rdir_blk=%i\n", superBlock.rootDirIndex);
   printf("data_blk=%i\n", superBlock.dataBlockStartIndex);
   printf("data_blk_count=%i\n", superBlock.dataBlockCount);
-  //Issue with fat table not being allocated
-  for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
+  // Issue with fat table not being allocated
+  for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
     if (fat[i] != 0) {
       occupied++;
     }
@@ -130,8 +130,8 @@ int fs_info(void) {
   }
   occupied = FS_FILE_MAX_COUNT - occupied;
   printf("rdr_free_ratio=%i/%i", occupied, FS_FILE_MAX_COUNT);
-  printf( "\n" );
-  
+  printf("\n");
+
   return 0;
 }
 
@@ -192,7 +192,8 @@ int fs_ls(void) {
   }
   for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
     if (rootDir[i].filename[0] != '\0') {
-      printf("file: %s, size: %i, data_blk: %i\n", rootDir[i].filename, rootDir[i].size, rootDir[i].start_index);
+      printf("file: %s, size: %i, data_blk: %i\n", rootDir[i].filename,
+             rootDir[i].size, rootDir[i].start_index);
     }
   }
   return 0;
@@ -248,7 +249,9 @@ int fs_stat(int fd) {
     return -1;
   }
 
-  printf("Size of file '%s' is %i bytes\n", rootDir[openFileTable[fd].filenum].filename, rootDir[openFileTable[fd].filenum].size);
+  printf("Size of file '%s' is %i bytes\n",
+         rootDir[openFileTable[fd].filenum].filename,
+         rootDir[openFileTable[fd].filenum].size);
   return rootDir[openFileTable[fd].filenum].size;
 }
 
@@ -347,7 +350,7 @@ int fs_write(int fd, void *buf, size_t count) {
   block_write(superBlock.rootDirIndex, rootDir);
   // FAT
   for (int i = 1; i < superBlock.fatBlockCount; i++) {
-    block_write(i, &fat[(i-1) * BLOCK_SIZE / sizeof(uint16_t)]);
+    block_write(i, &fat[(i - 1) * BLOCK_SIZE / sizeof(uint16_t)]);
   }
 
   return total;
@@ -393,19 +396,18 @@ int fs_read(int fd, void *buf, size_t count) {
     if (block == FAT_EOC) {
       return total;
     }
+
+    to_copy = MIN(BLOCK_SIZE, count);
     if (count >= BLOCK_SIZE) {
-      // read into buffer
+      // read into buffer directly
       block_read(block, buf);
-      total += BLOCK_SIZE;
-      count -= BLOCK_SIZE;
-      openFileTable[fd].offset += BLOCK_SIZE;
-      continue;
+    } else {
+      block_read(block, bounce);
+      memcpy(buf, bounce, count);
     }
-    block_read(block, bounce);
-    memcpy(buf, bounce, count);
-    total += count;
-    openFileTable[fd].offset += count;
-    count = 0;
+    total += to_copy;
+    count -= to_copy;
+    openFileTable[fd].offset += to_copy;
   }
   return total;
 }
