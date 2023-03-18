@@ -96,11 +96,16 @@ int fs_mount(const char *diskname) {
 }
 
 int fs_umount(void) {
-  // TODO: Check for current open file descriptors
   /* TODO: Phase 1 */
   if (block_disk_close() == -1) {
     return -1;
   }
+  for (int i=0; i<FS_OPEN_MAX_COUNT; i++) {
+    if (openFileTable[i].filenum != -1) {
+      return -1;
+    }
+  }
+  
   return 0;
 }
 
