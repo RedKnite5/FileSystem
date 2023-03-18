@@ -64,7 +64,6 @@ void _setOpenFileTableDefaults(void) {
 
 int fs_mount(const char *diskname) {
   uint8_t bytes[8];
-  // char input[8];
   char sig[] = "ECS150FS";
   /* TODO: Phase 1 */
   // Open disk, store info in data structures?
@@ -86,7 +85,7 @@ int fs_mount(const char *diskname) {
   }
 
   // FAT
-  for (int i = 1; i < N; i++) {
+  for (int i = 1; i <= N; i++) {
     block_read(i, &fat[(i - 1) * BLOCK_SIZE / sizeof(uint16_t)]);
   }
 
@@ -161,7 +160,7 @@ int fs_create(const char *filename) {
     // check rest of directory for preexisting filename
     for (int j = entry; j < FS_FILE_MAX_COUNT; j++) {
       if (!strcmp(rootDir[j].filename, filename)) {
-        printf("filename %s\n", rootDir[j].filename);
+        //printf("filename %s\n", rootDir[j].filename);
         error("Filename already exists\n");
         return -1;
       }
@@ -208,12 +207,10 @@ int fs_ls(void) {
     }
   }
 
-
-
   ///////////////
-  for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
-    printf("fat[%i] is %i\n", i, fat[i]);
-  }
+  //for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
+  //  printf("fat[%i] is %i\n", i, fat[i]);
+  //}
   ///////////////
 
   return 0;
@@ -295,7 +292,7 @@ int find_available_block(int start) {
   return -1 if there are no free blocks.
   */
   for (int i = start + 1; i < FS_FILE_MAX_COUNT; i++) {
-    printf("checking block %i: %i\n", i, fat[i]);
+    //printf("checking block %i: %i\n", i, fat[i]);
     if (fat[i] == 0) {
       return i;
     }
@@ -327,14 +324,17 @@ int fs_write(int fd, void *buf, size_t count) {
 
   char bounce[BLOCK_SIZE];
   int total = 0;
-  // Make sure to change block pos from -1 (empty) to an actual data block
+  // Make sure to change block pos from FAT_EOF (empty) to an actual data block
   // location
   if (rootDir[openFileTable[fd].filenum].start_index == FAT_EOC) {
     rootDir[openFileTable[fd].filenum].start_index = find_available_block(0);
   }
   uint16_t start_index_offset = superBlock.fatBlockCount + 2;
-  // 0 is the first data block
-  uint16_t block = start_index_offset + rootDir[openFileTable[fd].filenum].start_index + openFileTable[fd].offset / BLOCK_SIZE;
+  // 0 is the super block
+  uint16_t block = start_index_offset
+    + rootDir[openFileTable[fd].filenum].start_index
+    + openFileTable[fd].offset / BLOCK_SIZE;
+
   // Step 1
   block_read(block, bounce);
 
@@ -342,6 +342,7 @@ int fs_write(int fd, void *buf, size_t count) {
   size_t to_write = MIN(left_in_block, count);
   memcpy(bounce, buf, to_write);
   block_write(block, bounce);
+  //printf("wrote block %i\n", block);
 
   total += to_write;
   count -= to_write;
@@ -353,8 +354,8 @@ int fs_write(int fd, void *buf, size_t count) {
   while (count) {
     new_block = find_available_block(block-start_index_offset) + start_index_offset;
     fat[block-start_index_offset] = new_block - start_index_offset;
-    printf("block: %i\n", block);
-    printf("fat block: %i\n", block-start_index_offset);
+    //printf("writing block: %i\n", new_block);
+    //printf("fat block: %i\n", new_block-start_index_offset);
     block = new_block;
 
     to_write = MIN(BLOCK_SIZE, count);
@@ -421,10 +422,14 @@ int fs_read(int fd, void *buf, size_t count) {
   count -= to_copy;
   openFileTable[fd].offset += to_copy;
 
-  printf("block: %i\n", block);
+  //for (int i=1; i<200; i++) {
+  //  printf("read: %c\n", ((char*)buf)[BLOCK_SIZE-i]);
+  //}
+
+  //printf("read block: %i\n", block);
   while (count) {
     block = fat[block-start_index_offset] + start_index_offset;
-    printf("block: %i\n", block);
+    //printf("reading block: %i\n", block);
     // end of file
     //if (block == FAT_EOC) {
     //  return total;
@@ -438,6 +443,11 @@ int fs_read(int fd, void *buf, size_t count) {
       block_read(block, bounce);
       memcpy(buf, bounce, count);
     }
+
+    //for (int i=1; i<200; i++) {
+    //  printf("read: %c\n", ((char*)buf)[BLOCK_SIZE-i]);
+    //}
+    
     total += to_copy;
     count -= to_copy;
     openFileTable[fd].offset += to_copy;
