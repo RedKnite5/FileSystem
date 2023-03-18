@@ -365,7 +365,7 @@ int fs_write(int fd, void *buf, size_t count) {
     }
 
     // write to block
-    memcpy(bounce, buf, to_write);
+    memcpy(bounce, buf+total, to_write);
     total += to_write;
     count -= to_write;
     openFileTable[fd].offset += to_write;

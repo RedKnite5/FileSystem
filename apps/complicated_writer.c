@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
   ASSERT(ret == sizeof(data), "fs_read");
 
   for (int i=1; i<DATA; i++) {
-    //printf("%c  %c\n", data[i], buf[i]);
-    //ASSERT(data[i-1] == buf[i-1], "read and write");
+    printf("%c  %c\n", data[i], buf[i]);
+    ASSERT(data[i-1] == buf[i-1], "read and write");
   }
   
 	/* Close file and unmount */
