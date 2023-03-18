@@ -113,20 +113,7 @@ int fs_info(void) {
     bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
   }
 
-<<<<<<< HEAD
-  // print the individual bytes
-  printf("Signature is: ");
-  for (int i = 0; i < 8; i++) {
-    printf("%c", bytes[i]);
-  }
-  printf("\n");
-  printf("blockCount is: %i\n", superBlock.blockCount);
-  printf("rootDirIndex is: %i\n", superBlock.rootDirIndex);
-  printf("dataBlockStartIndex is: %i\n", superBlock.dataBlockStartIndex);
-  printf("dataBlockCount is: %i\n", superBlock.dataBlockCount);
-  printf("fatBlockCount is: %i\n", superBlock.fatBlockCount);
-=======
-    //print the individual bytes
+  //print the individual bytes
   printf("FS Info:\n");
   printf("total_blk_count=%i\n", superBlock.blockCount);
   printf("fat_blk_count=%i\n", superBlock.fatBlockCount);
@@ -151,7 +138,6 @@ int fs_info(void) {
   printf("rdr_free_ratio=%i/%i", occupied, FS_FILE_MAX_COUNT);
   printf( "\n" );
   
->>>>>>> fs_read
   return 0;
 }
 
@@ -179,8 +165,8 @@ int fs_create(const char *filename) {
     strcpy(rootDir[entry].filename, filename);
     rootDir[entry].size = 0;
 
-    rootDir[entry].start_index = 0xFFFF;  
-    block_write(superBlock.rootDirIndex, &rootDir);
+    rootDir[entry].start_index = FAT_EOC;
+    block_write(superBlock.rootDirIndex, rootDir);
     return 0;
   }
   return -1;
@@ -200,6 +186,7 @@ int fs_delete(const char *filename) {
     rootDir[entry].size = 0;
     rootDir[entry].start_index = 0;
     rootDir[entry].filename[0] = '\0';
+    block_write(superBlock.rootDirIndex, rootDir);
     return 0;
   }
   return -1;

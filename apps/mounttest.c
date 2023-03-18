@@ -23,31 +23,12 @@ int main(int argc, char *argv[]) {
     printf("Usage: %s <diskimage>\n", argv[0]);
     exit(1);
   }
-<<<<<<< HEAD
-  char buf[TO_READ];
-=======
-  //char buf[TO_READ];
-  //char tuff[TO_WRITE] = "HelloWorld";
->>>>>>> fs_read
   /* Mount disk */
   diskname = argv[1];
   ret = fs_mount(diskname);
   ASSERT(!ret, "fs_mount");
   fs_info();
-<<<<<<< HEAD
 
-
-  /* Mount disk */
-  diskname = argv[1];
-  ret = fs_mount(diskname);
-  ASSERT(!ret, "fs_mount");
-  fs_info();
-  fs_create("Roger");
-  fs_create("Is");
-  fs_create("Cool");
-  fs_ls();
-=======
->>>>>>> fs_read
   fs_delete("Roger");
   fs_ls();
   int fd_open = fs_open("simple_writer.c");
