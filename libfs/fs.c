@@ -100,12 +100,12 @@ int fs_umount(void) {
   if (block_disk_close() == -1) {
     return -1;
   }
-  for (int i=0; i<FS_OPEN_MAX_COUNT; i++) {
+  for (int i = 0; i < FS_OPEN_MAX_COUNT; i++) {
     if (openFileTable[i].filenum != -1) {
       return -1;
     }
   }
-  
+
   return 0;
 }
 
@@ -151,12 +151,18 @@ int fs_create(const char *filename) {
   // Check if root dir is empty
   for (int entry = 1; entry < FS_FILE_MAX_COUNT; entry++) {
     if (rootDir[entry].filename[0] != '\0') {
+      if (!strcmp(rootDir[entry].filename, filename)) {
+        error("Filename already exists\n");
+        return -1;
+      }
       continue;
     }
 
     // check rest of directory for preexisting filename
     for (int j = entry; j < FS_FILE_MAX_COUNT; j++) {
       if (!strcmp(rootDir[j].filename, filename)) {
+        printf("filename %s\n", rootDir[j].filename);
+        error("Filename already exists\n");
         return -1;
       }
     }
@@ -201,6 +207,13 @@ int fs_ls(void) {
              rootDir[i].size, rootDir[i].start_index);
     }
   }
+
+  // delte what is below
+  //for (int i = 0; i < 100; i++) {
+  //  printf("fat %d: %i\n", i, fat[i]);
+  //}
+  // delete what is above
+
   return 0;
 }
 
@@ -279,7 +292,7 @@ int find_available_block(int start) {
   return the block number of the free block. 1 is the first data block.
   return -1 if there are no free blocks.
   */
-  for (int i = start; i < FS_FILE_MAX_COUNT; i++) {
+  for (int i = start + 1; i < FS_FILE_MAX_COUNT; i++) {
     if (fat[i] == 0) {
       return i;
     }
@@ -309,7 +322,7 @@ int fs_write(int fd, void *buf, size_t count) {
   // Make sure to change block pos from -1 (empty) to an actual data block
   // location
   if (rootDir[openFileTable[fd].filenum].start_index == FAT_EOC) {
-    rootDir[openFileTable[fd].filenum].start_index = find_available_block(1);
+    rootDir[openFileTable[fd].filenum].start_index = find_available_block(0);
   }
   uint16_t block = rootDir[openFileTable[fd].filenum].start_index +
                    superBlock.fatBlockCount + 2 +
@@ -332,6 +345,7 @@ int fs_write(int fd, void *buf, size_t count) {
   while (count) {
     new_block = find_available_block(block);
     fat[block] = new_block;
+    printf("block: %i\n", block);
     block = new_block;
 
     to_write = MIN(BLOCK_SIZE, count);
@@ -373,6 +387,10 @@ int fs_read(int fd, void *buf, size_t count) {
     return 0;
   }
 
+  if (count > rootDir[openFileTable[fd].filenum].size - openFileTable[fd].offset) {
+    count = rootDir[openFileTable[fd].filenum].size - openFileTable[fd].offset;
+  }
+
   char bounce[BLOCK_SIZE];
   size_t total = 0;
 
@@ -397,6 +415,7 @@ int fs_read(int fd, void *buf, size_t count) {
   // what if we run out of file to read?
   while (count) {
     block = fat[block];
+    printf("block: %i\n", block);
     // end of file
     if (block == FAT_EOC) {
       return total;

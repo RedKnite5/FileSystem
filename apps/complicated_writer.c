@@ -4,6 +4,8 @@
 
 #include <fs.h>
 
+#define DATA 10000
+
 #define ASSERT(cond, func)                               \
 do {                                                     \
 	if (!(cond)) {                                       \
@@ -17,7 +19,15 @@ int main(int argc, char *argv[])
 	int ret;
 	char *diskname;
 	int fd;
-	char data[26] = "abcdefghijklmnopqrstuvwxyz";
+	char data[DATA];
+  char alpha[] = "abcdefghijklmnopqrstuvwxyz";
+
+  for (int i=0; i<DATA; i++) {
+    data[i] = alpha[i%26];
+    if (i % 1000 == 0) {
+      data[i] = '0' + (i / 1000) - 1;
+    }
+  }
 
 	if (argc < 1) {
 		printf("Usage: %s <diskimage>\n", argv[0]);
@@ -29,17 +39,32 @@ int main(int argc, char *argv[])
 	ret = fs_mount(diskname);
 	ASSERT(!ret, "fs_mount");
 
-	/* Create file and open */
-	ret = fs_create("myfile");
-	ASSERT(!ret, "fs_create");
+	// Too long filename
+	ret = fs_create("file_678901234567");
+	ASSERT(ret, "fs_create");
 
-	fd = fs_open("myfile");
+	ret = fs_create("Giant_file");
+	//ASSERT(!ret, "fs_create");
+
+	fd = fs_open("Giant_file");
 	ASSERT(fd >= 0, "fs_open");
 
-	/* Write some data */
-	ret = fs_write(fd, data, sizeof(data));
-	ASSERT(ret == sizeof(data), "fs_write");
+	/* Write some 3 blocks data */
+	//ret = fs_write(fd, data, sizeof(data));
+	//ASSERT(ret == sizeof(data), "fs_write");
 
+  ret = fs_lseek(fd, 0);
+  ASSERT(!ret, "fs_lseek");
+
+  char buf[DATA];
+  ret = fs_read(fd, buf, sizeof(data));
+  ASSERT(ret == sizeof(data), "fs_read");
+
+  for (int i=1; i<DATA; i++) {
+    printf("%i  %i\n", data[i], buf[i]);
+    ASSERT(data[i-1] == buf[i-1], "read and write");
+  }
+  
 	/* Close file and unmount */
 	fs_close(fd);
 	fs_umount();

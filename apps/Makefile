@@ -4,7 +4,8 @@ programs := \
 			simple_reader.x \
 			test_fs.x \
 			mounttest.x \
-			create_file.x
+			create_file.x \
+			complicated_writer.x
 
 # File-system library
 FSLIB := libfs
