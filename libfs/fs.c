@@ -133,7 +133,7 @@ int fs_info(void) {
     }
   }
   occupied = FS_FILE_MAX_COUNT - occupied;
-  printf("rdr_free_ratio=%i/%i", occupied, FS_FILE_MAX_COUNT);
+  printf("rdir_free_ratio=%i/%i", occupied, FS_FILE_MAX_COUNT);
   printf("\n");
 
   return 0;
