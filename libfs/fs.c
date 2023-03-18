@@ -438,10 +438,10 @@ int fs_read(int fd, void *buf, size_t count) {
     to_copy = MIN(BLOCK_SIZE, count);
     if (count >= BLOCK_SIZE) {
       // read into buffer directly
-      block_read(block, buf);
+      block_read(block, buf+total);
     } else {
       block_read(block, bounce);
-      memcpy(buf, bounce, count);
+      memcpy(buf+total, bounce, count);
     }
 
     //for (int i=1; i<200; i++) {
