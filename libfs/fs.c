@@ -87,7 +87,7 @@ int fs_mount(const char *diskname) {
 
   // FAT
   for (int i = 1; i < N; i++) {
-    block_read(i, &fat[i * BLOCK_SIZE / sizeof(uint16_t)]);
+    block_read(i, &fat[(i-1) * BLOCK_SIZE / sizeof(uint16_t)]);
   }
 
   // RootDirectory
@@ -108,10 +108,12 @@ int fs_umount(void) {
 int fs_info(void) {
   /* TODO: Phase 1 */
   uint8_t bytes[8];
+  int occupied = 0;
   for (int i = 0; i < 8; i++) {
     bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
   }
 
+<<<<<<< HEAD
   // print the individual bytes
   printf("Signature is: ");
   for (int i = 0; i < 8; i++) {
@@ -123,6 +125,33 @@ int fs_info(void) {
   printf("dataBlockStartIndex is: %i\n", superBlock.dataBlockStartIndex);
   printf("dataBlockCount is: %i\n", superBlock.dataBlockCount);
   printf("fatBlockCount is: %i\n", superBlock.fatBlockCount);
+=======
+    //print the individual bytes
+  printf("FS Info:\n");
+  printf("total_blk_count=%i\n", superBlock.blockCount);
+  printf("fat_blk_count=%i\n", superBlock.fatBlockCount);
+  printf("rdir_blk=%i\n", superBlock.rootDirIndex);
+  printf("data_blk=%i\n", superBlock.dataBlockStartIndex);
+  printf("data_blk_count=%i\n", superBlock.dataBlockCount);
+  //Issue with fat table not being allocated
+  for (int i=0; i<FS_FILE_MAX_COUNT; i++) {
+    if (fat[i] != 0) {
+      occupied++;
+    }
+  }
+  occupied = superBlock.dataBlockCount - occupied;
+  printf("fat_free_ratio=%i/%i\n", occupied, superBlock.dataBlockCount);
+  occupied = 0;
+  for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
+    if (rootDir[i].filename[0] != '\0') {
+      occupied++;
+    }
+  }
+  occupied = FS_FILE_MAX_COUNT - occupied;
+  printf("rdr_free_ratio=%i/%i", occupied, FS_FILE_MAX_COUNT);
+  printf( "\n" );
+  
+>>>>>>> fs_read
   return 0;
 }
 
@@ -149,7 +178,9 @@ int fs_create(const char *filename) {
 
     strcpy(rootDir[entry].filename, filename);
     rootDir[entry].size = 0;
-    rootDir[entry].start_index = 0xFFFF;
+
+    rootDir[entry].start_index = 0xFFFF;  
+    block_write(superBlock.rootDirIndex, &rootDir);
     return 0;
   }
   return -1;
@@ -180,7 +211,7 @@ int fs_ls(void) {
   }
   for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
     if (rootDir[i].filename[0] != '\0') {
-      printf("%s\n", rootDir[i].filename);
+      printf("file: %s, size: %i, data_blk: %i\n", rootDir[i].filename, rootDir[i].size, rootDir[i].start_index);
     }
   }
   return 0;
@@ -236,6 +267,7 @@ int fs_stat(int fd) {
     return -1;
   }
 
+  printf("Size of file '%s' is %i bytes\n", rootDir[openFileTable[fd].filenum].filename, rootDir[openFileTable[fd].filenum].size);
   return rootDir[openFileTable[fd].filenum].size;
 }
 
@@ -283,7 +315,7 @@ int fs_write(int fd, void *buf, size_t count) {
         If done writing, set FAT to FAT_EOC
     3. Else
       Write into disk
-*/
+  */
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT ||
       openFileTable[fd].filenum == -1 || buf == NULL) {
     return -1;
@@ -305,6 +337,7 @@ int fs_write(int fd, void *buf, size_t count) {
   int to_write = MIN(left_in_block, count);
   memcpy(bounce, buf, to_write);
   block_write(block, bounce);
+
   total += to_write;
   count -= to_write;
   openFileTable[fd].offset += to_write;
@@ -361,7 +394,6 @@ int fs_read(int fd, void *buf, size_t count) {
     Too short
     Starts halfway, overflows into another
   */
-
   // first block
   int left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
   int to_copy = MIN(left_in_block, count);
