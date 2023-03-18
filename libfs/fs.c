@@ -152,7 +152,7 @@ int fs_create(const char *filename) {
   // Index is -1, nothing in data block
   // Get name, size, index, add it to root
   // Check if root dir has space
-  for (int entry = 1; entry < FS_FILE_MAX_COUNT; entry++) {
+  for (int entry = 0; entry < FS_FILE_MAX_COUNT; entry++) {
     if (rootDir[entry].filename[0] != '\0') {
       if (!strcmp(rootDir[entry].filename, filename)) {
         error("Filename already exists\n");
