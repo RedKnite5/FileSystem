@@ -91,7 +91,6 @@ int fs_mount(const char *diskname) {
   }
 
   // RootDirectory
-
   block_read(superBlock.rootDirIndex, rootDir);
   return 0;
 }
@@ -107,12 +106,7 @@ int fs_umount(void) {
 
 int fs_info(void) {
   /* TODO: Phase 1 */
-  uint8_t bytes[8];
   int occupied = 0;
-  for (int i = 0; i < 8; i++) {
-    bytes[i] = superBlock.signature >> (8 * i) & 0xFF;
-  }
-
   //print the individual bytes
   printf("FS Info:\n");
   printf("total_blk_count=%i\n", superBlock.blockCount);
@@ -207,8 +201,8 @@ int fs_ls(void) {
 int fs_open(const char *filename) {
   /* TODO: Phase 3 */
   if (strlen(filename) >= FS_FILENAME_LEN || block_disk_count() == -1) {
-    return -1;
     error("invalid filename or disk not mounted\n");
+    return -1;
   }
 
   int index = -1;
@@ -287,21 +281,16 @@ int find_available_block(int start) {
 
 int fs_write(int fd, void *buf, size_t count) {
   /*Similar logic to FS_READ
-    Steps to figure out:
-      Block still has empty space to write to, stop when reach end
-      Find next empty block to write to if overflows
 
   Steps to execute:
     1. Copy buf into bounce buffer, buffer may be > block size
-    2. If bounce is > remaining space
-        write what you can, count remaining bytes
+    2. If count is greater than remaining space
+        write what you can, reduce count by that much
         Look for next availiable block
           *Check FAT, 0 means it is empty
         Write to block, repeat 2 if new block is full
         Set FAT to point at newly written block
         If done writing, set FAT to FAT_EOC
-    3. Else
-      Write into disk
   */
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT ||
       openFileTable[fd].filenum == -1 || buf == NULL) {
@@ -311,7 +300,7 @@ int fs_write(int fd, void *buf, size_t count) {
   int total = 0;
   // Make sure to change block pos from -1 (empty) to an actual data block
   // location
-  if (rootDir[openFileTable[fd].filenum].start_index = FAT_EOC) {
+  if (rootDir[openFileTable[fd].filenum].start_index == FAT_EOC) {
     rootDir[openFileTable[fd].filenum].start_index = find_available_block(1);
   }
   uint16_t block = rootDir[openFileTable[fd].filenum].start_index +
@@ -351,6 +340,12 @@ int fs_write(int fd, void *buf, size_t count) {
   if (openFileTable[fd].offset > rootDir[openFileTable[fd].filenum].size) {
     rootDir[openFileTable[fd].filenum].size = openFileTable[fd].offset;
     fat[block] = FAT_EOC;
+  }
+
+  block_write(superBlock.rootDirIndex, rootDir);
+  // FAT
+  for (int i = 1; i < superBlock.fatBlockCount; i++) {
+    block_write(i, &fat[(i-1) * BLOCK_SIZE / sizeof(uint16_t)]);
   }
 
   return total;
