@@ -12,7 +12,7 @@
 #define FAT_EOC 0xFFFF
 #define ENTRIES_PER_FATBLOCK 2048
 
-#if 0
+#if 1
   #define error(msg) fprintf(stderr, msg)
 #else
   #define error(msg) do {} while (0)
@@ -182,9 +182,11 @@ int fs_delete(const char *filename) {
     if (strcmp(rootDir[entry].filename, filename)) {
       continue;
     }
+    
     rootDir[entry].size = 0;
     rootDir[entry].start_index = 0;  
     rootDir[entry].filename[0] = '\0';
+    block_write(superBlock.rootDirIndex, &rootDir);
     return 0;
   }
   return -1;
@@ -194,6 +196,7 @@ int fs_ls(void) {
   if (block_disk_count() == -1) {
     return -1;
   }
+  printf("FS Ls:\n");
   for (int i = 0; i < FS_FILE_MAX_COUNT; i++) {
     if (rootDir[i].filename[0] != '\0') {
       printf("file: %s, size: %i, data_blk: %i\n", rootDir[i].filename, rootDir[i].size, rootDir[i].start_index);
@@ -347,12 +350,9 @@ int fs_read(int fd, void *buf, size_t count) {
   if (block_disk_count() == -1 || fd >= FS_OPEN_MAX_COUNT || openFileTable[fd].filenum == -1) {
     return -1;
     }
-  printf("rootDir %i\n", rootDir[openFileTable[fd].filenum].size);
-  printf("count %i\n", count);
   if (count > rootDir[openFileTable[fd].filenum].size) {
     count = rootDir[openFileTable[fd].filenum].size;
   }
-  printf("count %i\n", count);
   //Assumption: openFileTable is file table, fd is file descriptor
   char bounce[BLOCK_SIZE];
   int total = 0;

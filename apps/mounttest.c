@@ -18,7 +18,7 @@
 int main(int argc, char *argv[]) {
   int ret;
   char *diskname;
-
+  size_t offset = 100;
   if (argc < 1) {
     printf("Usage: %s <diskimage>\n", argv[0]);
     exit(1);
@@ -30,13 +30,10 @@ int main(int argc, char *argv[]) {
   ret = fs_mount(diskname);
   ASSERT(!ret, "fs_mount");
   fs_info();
-  fs_ls();
-  int fd_open = fs_open("simple_writer.c");
-  printf("fd_write: %d\n", fd_open);
-  printf("fs_stat: %d\n", fs_stat(fd_open));
   
+  int fd_open = fs_open("simple_writer.c");
+  fs_lseek(fd_open, offset);
   int read = fs_read(fd_open, buf, TO_READ);
-  //fs_write(fd_open, tuff, TO_WRITE);
   for (int i = 0; i < read; i++) {
     printf("%c", buf[i]);
   }
