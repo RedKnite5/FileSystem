@@ -340,7 +340,7 @@ int fs_write(int fd, void *buf, size_t count) {
 
   size_t left_in_block = BLOCK_SIZE - (openFileTable[fd].offset % BLOCK_SIZE);
   size_t to_write = MIN(left_in_block, count);
-  memcpy(bounce, buf, to_write);
+  memcpy(bounce+openFileTable[fd].offset % BLOCK_SIZE, buf, to_write);
   block_write(block, bounce);
   //printf("wrote block %i\n", block);
 
